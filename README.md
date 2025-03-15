@@ -7,12 +7,7 @@ import matplotlib.pyplot as plt
 stock_symbol = "CPALL.BK"  # For the Thai Stock Exchange (SET)
 df = yf.download(stock_symbol, start="2023-01-01", end="2023-12-31")
 df.head()
-
-
 <img width="1440" alt="Screenshot 2568-03-15 at 15 06 55" src="https://github.com/user-attachments/assets/c30357e2-7864-446b-bce5-a4e28b05e7fe" />
-
-
-
 
 # Check for missing data
 print("Missing Values:\n", df.isnull().sum())
