@@ -1,28 +1,141 @@
-# CPALL Stock Price Prediction (2024)
-
-This project uses machine learning to predict CPALL stock prices (in the Thai Stock Exchange) for 2024 using an LSTM (Long Short-Term Memory) model.
-
-## Prerequisites
-- Python 3.x
-- Required libraries:
-  - `yfinance`
-  - `pandas`
-  - `matplotlib`
-  - `tensorflow`
-  - `mplfinance`
-  - `scikit-learn`
-
-## Steps
-
-### 1. Fetch CPALL Stock Data
-We fetch CPALL stock data from Yahoo Finance for the year 2023:
-```python
 import yfinance as yf
 import pandas as pd
+import mplfinance as mpf
+import matplotlib.pyplot as plt
 
-stock_symbol = "CPALL.BK"  # For the Thai Stock Exchange (SET)
+# ดึงข้อมูลหุ้น CPALL
+stock_symbol = "CPALL.BK"  # สำหรับตลาดหลักทรัพย์ไทย (SET)
 df = yf.download(stock_symbol, start="2023-01-01", end="2023-12-31")
 df.head()
 
-# Check Missing Data
+# เช็คข้อมูลที่หายไป
 print("Missing Values:\n", df.isnull().sum())
+
+# สร้างกราฟราคาปิดของหุ้น CPALL
+plt.figure(figsize=(12, 6))
+plt.plot(df.index, df["Close"], label="Closing Price", linewidth=2, color='blue')
+
+plt.title("CPALL Stock Closing Price (2023)")
+plt.xlabel("Date")
+plt.ylabel("Price (THB)")
+plt.legend()
+plt.grid()
+
+# แสดงกราฟ
+plt.show()
+
+import numpy as np
+import pandas as pd
+import tensorflow as tf
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import LSTM, Dense
+from sklearn.preprocessing import MinMaxScaler
+import matplotlib.pyplot as plt
+
+data = df[["Close"]].values
+
+# สเกลข้อมูลให้อยู่ในช่วง 0-1
+scaler = MinMaxScaler(feature_range=(0, 1))
+scaled_data = scaler.fit_transform(data)
+
+# ฟังก์ชันสร้างชุดข้อมูลแบบ Time Series
+def create_dataset(dataset, time_step=60):
+    X, Y = [], []
+    for i in range(len(dataset) - time_step - 1):
+        X.append(dataset[i:(i + time_step), 0])
+        Y.append(dataset[i + time_step, 0])
+    return np.array(X), np.array(Y)
+
+# ตั้งค่าช่วงเวลา 60 วันย้อนหลังเพื่อพยากรณ์วันถัดไป
+time_step = 60
+X, Y = create_dataset(scaled_data, time_step)
+
+# แบ่ง Train-Test (80-20)
+train_size = int(len(X) * 0.8)
+X_train, X_test = X[:train_size], X[train_size:]
+Y_train, Y_test = Y[:train_size], Y[train_size:]
+
+# แปลงให้เป็นรูปแบบที่เหมาะสมกับ LSTM
+X_train = X_train.reshape((X_train.shape[0], X_train.shape[1], 1))
+X_test = X_test.reshape((X_test.shape[0], X_test.shape[1], 1))
+
+# สร้างโมเดล LSTM
+model = Sequential([
+    LSTM(50, return_sequences=True, input_shape=(time_step, 1)),
+    LSTM(50, return_sequences=False),
+    Dense(25),
+    Dense(1)
+])
+
+# คอมไพล์โมเดล
+model.compile(optimizer="adam", loss="mean_squared_error")
+
+# เทรนโมเดล
+model.fit(X_train, Y_train, batch_size=16, epochs=50, verbose=1)
+
+# ทำการพยากรณ์ปี 2024
+future_days = 365  # จำนวนวันที่ต้องการทำนาย
+future_predictions = []
+
+# ใช้ข้อมูล 60 วันสุดท้ายเป็นจุดเริ่มต้น
+last_60_days = scaled_data[-time_step:].reshape(1, time_step, 1)
+
+for _ in range(future_days):
+    pred = model.predict(last_60_days, verbose=0)
+    pred = pred.reshape(1, 1, 1)  # แปลงให้มีขนาด 3 มิติ
+    future_predictions.append(pred[0, 0])
+    last_60_days = np.append(last_60_days[:, 1:, :], pred, axis=1)
+
+# แปลงค่ากลับเป็นราคาหุ้นจริง
+future_predictions = scaler.inverse_transform(np.array(future_predictions).reshape(-1, 1))
+
+# แปลง last_date ให้เป็น datetime
+last_date = pd.to_datetime(df.index[-1])
+
+# สร้างช่วงวันที่สำหรับปี 2024
+future_dates = pd.date_range(start=last_date + pd.Timedelta(days=1), periods=future_days, freq='D')
+
+# ตรวจสอบและแปลง df.index และ future_dates เป็น datetime
+df.index = pd.to_datetime(df.index, errors="coerce")
+future_dates = pd.to_datetime(future_dates, errors="coerce")
+
+# วาดกราฟทำนายราคาหุ้นปี 2024
+plt.figure(figsize=(12, 6))
+plt.plot(df.index, df["Close"], label="Actual Price", color="blue")
+plt.plot(future_dates, future_predictions, label="Predicted Price (2024)", color="red", linestyle="dashed")
+plt.title("CPALL Stock Price Prediction for 2024")
+plt.xlabel("Date")
+plt.ylabel("Price (THB)")
+plt.legend()
+plt.grid()
+plt.show()
+
+# ดึงข้อมูลหุ้น 
+stock_symbol = "CPALL.BK"  # สำหรับตลาดหลักทรัพย์ไทย (SET)
+df2 = yf.download(stock_symbol, start="2024-01-01", end="2024-12-31")
+df2.head()
+
+# สร้าง DataFrame สำหรับผลลัพธ์การพยากรณ์
+predicted_df = pd.DataFrame({
+    "Date": future_dates,
+    "Predicted Price": future_predictions.flatten()
+})
+predicted_df.head()
+
+from sklearn.metrics import mean_squared_error, mean_absolute_error
+
+# ทำนายค่าทดสอบ
+Y_pred = model.predict(X_test)
+
+# แปลงค่าทำนายกลับเป็นราคาจริง
+Y_test_inv = scaler.inverse_transform(Y_test.reshape(-1, 1))
+Y_pred_inv = scaler.inverse_transform(Y_pred)
+
+# คำนวณ MSE, RMSE, MAE
+mse = mean_squared_error(Y_test_inv, Y_pred_inv)
+rmse = np.sqrt(mse)
+mae = mean_absolute_error(Y_test_inv, Y_pred_inv)
+
+print(f"Mean Squared Error (MSE): {mse:.4f}")
+print(f"Root Mean Squared Error (RMSE): {rmse:.4f}")
+print(f"Mean Absolute Error (MAE): {mae:.4f}")
