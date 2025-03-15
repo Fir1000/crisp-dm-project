@@ -1,21 +1,25 @@
-# CRISP-DM Project
+# CPALL Stock Price Prediction (2024)
 
-## Business Understanding
-- **Objective**: การทำนายราคาหุ้น
-- **Problem**: คาดการณ์ราคาหุ้นในตลาดหุ้นไทย
+โปรเจกต์นี้ใช้การเรียนรู้ของเครื่อง (Machine Learning) เพื่อทำนายราคาหุ้น CPALL (ในตลาดหลักทรัพย์ไทย) ในปี 2024 โดยใช้โมเดล LSTM (Long Short-Term Memory)
 
-## Data Understanding
-- **Dataset**: ข้อมูลราคาหุ้นจาก Yahoo Finance
-- **Exploration**: การสำรวจข้อมูลเบื้องต้น เช่น การตรวจสอบค่าผิดปกติ
+## รายการสิ่งที่ต้องเตรียม
+- Python 3.x
+- ไลบรารีที่จำเป็น:
+  - `yfinance`
+  - `pandas`
+  - `matplotlib`
+  - `tensorflow`
+  - `mplfinance`
+  - `scikit-learn`
 
-## Data Preparation
-- **Steps**: การทำ Data Cleaning เช่น การจัดการกับค่า Missing, การแปลงข้อมูล
+## ขั้นตอนการดำเนินการ
 
-## Modeling
-- **Model**: การใช้โมเดลการทำนายเช่น Linear Regression, Random Forest
+### 1. ดึงข้อมูลหุ้น CPALL
+เราดึงข้อมูลราคาหุ้น CPALL จาก Yahoo Finance สำหรับปี 2023:
+```python
+import yfinance as yf
+import pandas as pd
 
-## Evaluation
-- **Metric**: การประเมินผลโดยใช้ Accuracy, RMSE
-
-## Deployment
-- **API**: การสร้าง API เพื่อนำเสนอผลการทำนาย
+stock_symbol = "CPALL.BK"  # สำหรับตลาดหลักทรัพย์ไทย (SET)
+df = yf.download(stock_symbol, start="2023-01-01", end="2023-12-31")
+df.head()
