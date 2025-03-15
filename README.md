@@ -8,8 +8,8 @@ stock_symbol = "CPALL.BK"  # For the Thai Stock Exchange (SET)
 df = yf.download(stock_symbol, start="2023-01-01", end="2023-12-31")
 df.head()
 
-![CPALL Stock Prediction](![Uploading Screenshot 2568-03-15 at 15.06.55.png…]()
-)
+![Description of the image](path_to_image)
+
 
 
 # Check for missing data
